@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" class="transition duration-300">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>To-Do List App</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>To-Do List App</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/4697/4697260.png" />
+    <meta name="theme-color" content="#4f46e5" />
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 dark:text-white transition duration-300">
 
@@ -36,8 +39,20 @@
         <button onclick="clearCompleted()" class="text-red-500 text-sm hover:underline">Clear Completed</button>
         <button onclick="toggleDarkMode()" class="text-sm text-blue-500 hover:underline">Toggle Dark Mode</button>
         </div>
+        
     </div>
 
+
+    <button id="installBtn" class="mt-4 text-sm text-green-500 hover:underline hidden">Install App</button>
+
+
     <script src="script.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log("Service Worker Registered"));
+    }
+    </script>
+
 </body>
 </html>
