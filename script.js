@@ -1,119 +1,121 @@
-        const taskInput = document.getElementById('taskInput');
-        const dueDateInput = document.getElementById('dueDate');
-        const taskList = document.getElementById('taskList');
+const taskInput = document.getElementById("taskInput");
+const dueDateInput = document.getElementById("dueDate");
+const filterSelect = document.getElementById("filter");
+const sortOrderSelect = document.getElementById("sortOrder");
+const taskList = document.getElementById("taskList");
+const installBtn = document.getElementById("installBtn");
+let searchQuery = "";
 
-        let filter = 'all';
-        let sortOrder = 'asc';
+function getTasks() {
+  return JSON.parse(localStorage.getItem("tasks") || "[]");
+}
 
-        window.onload = () => {
-        if (localStorage.getItem('theme') === 'dark') {
-            document.documentElement.classList.add('dark');
-        }
-        renderTasks(getTasks());
-        };
+function saveTasks(tasks) {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
 
-        function getTasks() {
-        return JSON.parse(localStorage.getItem('tasks')) || [];
-        }
+function addTask() {
+  const text = taskInput.value.trim();
+  const date = dueDateInput.value;
 
-        function saveTasks(tasks) {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-        }
+  if (!text) return alert("Enter a task");
+  if (!date) return alert("Select a due date");
 
-        function addTask() {
-        const text = taskInput.value.trim();
-        const date = dueDateInput.value;
-        if (!text || !date) return alert('Please enter both task and due date');
+  const tasks = getTasks();
+  tasks.push({ text, done: false, date });
+  saveTasks(tasks);
+  renderTasks(tasks);
+  taskInput.value = "";
+  dueDateInput.value = "";
+}
 
-        const tasks = getTasks();
-        tasks.push({ text, date, done: false });
-        saveTasks(tasks);
-        renderTasks(tasks);
-        taskInput.value = '';
-        dueDateInput.value = '';
-        }
+function toggleDone(index) {
+  const tasks = getTasks();
+  tasks[index].done = !tasks[index].done;
+  saveTasks(tasks);
+  renderTasks(tasks);
+}
 
-        function deleteTask(index) {
-        const tasks = getTasks();
-        tasks.splice(index, 1);
-        saveTasks(tasks);
-        renderTasks(tasks);
-        }
+function deleteTask(index) {
+  const taskItems = document.querySelectorAll("#taskList li");
+  const taskElement = taskItems[index];
+  if (taskElement) {
+    taskElement.classList.add("fade-out");
+    taskElement.addEventListener("animationend", () => {
+      const tasks = getTasks();
+      tasks.splice(index, 1);
+      saveTasks(tasks);
+      renderTasks(tasks);
+    });
+  }
+}
 
-        function toggleDone(index) {
-        const tasks = getTasks();
-        tasks[index].done = !tasks[index].done;
-        saveTasks(tasks);
-        renderTasks(tasks);
-        }
+function clearCompleted() {
+  const tasks = getTasks().filter(task => !task.done);
+  saveTasks(tasks);
+  renderTasks(tasks);
+}
 
-        function renderTasks(tasks) {
-        taskList.innerHTML = '';
-        const sorted = [...tasks].sort((a, b) => {
-            return sortOrder === 'asc'
-            ? new Date(a.date) - new Date(b.date)
-            : new Date(b.date) - new Date(a.date);
-        });
+function renderTasks(tasks) {
+  taskList.innerHTML = "";
+  const filter = filterSelect.value;
+  const sortOrder = sortOrderSelect.value;
 
-        sorted.forEach((task, index) => {
-            if (
-            (filter === 'active' && task.done) ||
-            (filter === 'completed' && !task.done)
-            ) return;
+  const sorted = tasks.sort((a, b) =>
+    sortOrder === "newest"
+      ? new Date(b.date) - new Date(a.date)
+      : new Date(a.date) - new Date(b.date)
+  );
 
-            const li = document.createElement('li');
-            li.className = 'bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded flex justify-between items-center';
+  const filtered = sorted.filter(task => {
+    const matchesFilter =
+      filter === "all" ||
+      (filter === "active" && !task.done) ||
+      (filter === "completed" && task.done);
 
-            li.innerHTML = `
-            <div class="flex flex-col flex-1 cursor-pointer ${task.done ? 'line-through text-gray-500' : ''}" onclick="toggleDone(${index})">
-                <span>${task.text}</span>
-                <small class="text-xs text-gray-500 dark:text-gray-300">Due: ${task.date}</small>
-            </div>
-            <button class="bg-red-500 text-white px-3 py-1 rounded ml-4" onclick="deleteTask(${index})">Delete</button>
-            `;
-            taskList.appendChild(li);
-        });
-        }
+    const matchesSearch = task.text.toLowerCase().includes(searchQuery.toLowerCase());
 
-        function filterTasks(type) {
-        filter = type;
-        renderTasks(getTasks());
-        }
+    return matchesFilter && matchesSearch;
+  });
 
-        function sortTasks(order) {
-        sortOrder = order;
-        renderTasks(getTasks());
-        }
+  filtered.forEach((task, index) => {
+    const li = document.createElement("li");
+    li.className = "bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded flex justify-between items-center fade-in";
 
-        function clearCompleted() {
-        let tasks = getTasks();
-        tasks = tasks.filter(task => !task.done);
-        saveTasks(tasks);
-        renderTasks(tasks);
-        }
+    li.innerHTML = `
+      <div class="flex flex-col flex-1 cursor-pointer ${task.done ? "line-through text-gray-500" : ""}" onclick="toggleDone(${index})">
+        <span>${task.text}</span>
+        <small class="text-xs text-gray-500 dark:text-gray-300">Due: ${task.date}</small>
+      </div>
+      <button class="bg-red-500 text-white px-3 py-1 rounded ml-4" onclick="deleteTask(${index})">Delete</button>
+    `;
+    taskList.appendChild(li);
+  });
+}
 
-        function toggleDarkMode() {
-        document.documentElement.classList.toggle('dark');
-        const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        localStorage.setItem('theme', theme);
-        }
+function toggleDarkMode() {
+  document.documentElement.classList.toggle("dark");
+}
 
-        let deferredPrompt;
-        const installBtn = document.getElementById("installBtn");
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchQuery = e.target.value;
+  renderTasks(getTasks());
+});
 
-        window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        installBtn.classList.remove("hidden");
+window.onload = () => renderTasks(getTasks());
 
-        installBtn.addEventListener("click", () => {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choice) => {
-            if (choice.outcome === "accepted") {
-                console.log("User accepted install");
-            }
-            deferredPrompt = null;
-            installBtn.classList.add("hidden");
-            });
-        });
-        });
+// PWA install button
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.classList.remove("hidden");
+  installBtn.addEventListener("click", () => {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(choice => {
+      if (choice.outcome === "accepted") console.log("App installed");
+      installBtn.classList.add("hidden");
+    });
+  });
+});
+
