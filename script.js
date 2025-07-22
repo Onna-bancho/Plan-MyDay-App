@@ -1,121 +1,134 @@
-const taskInput = document.getElementById("taskInput");
-const dueDateInput = document.getElementById("dueDate");
-const filterSelect = document.getElementById("filter");
-const sortOrderSelect = document.getElementById("sortOrder");
-const taskList = document.getElementById("taskList");
-const installBtn = document.getElementById("installBtn");
-let searchQuery = "";
+      
+      const taskInput = document.getElementById('taskInput');
+      const dueDateInput = document.getElementById('dueDate');
+      const taskList = document.getElementById('taskList');
 
-function getTasks() {
-  return JSON.parse(localStorage.getItem("tasks") || "[]");
-}
+      let filter = 'all';
+      let sortOrder = 'asc';
 
-function saveTasks(tasks) {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-}
+      window.onload = () => {
+        if (localStorage.getItem('theme') === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+        renderTasks(getTasks());
+        requestNotificationPermission();
+      };
 
-function addTask() {
-  const text = taskInput.value.trim();
-  const date = dueDateInput.value;
+      function getTasks() {
+        return JSON.parse(localStorage.getItem('tasks')) || [];
+      }
 
-  if (!text) return alert("Enter a task");
-  if (!date) return alert("Select a due date");
+      function saveTasks(tasks) {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+      }
 
-  const tasks = getTasks();
-  tasks.push({ text, done: false, date });
-  saveTasks(tasks);
-  renderTasks(tasks);
-  taskInput.value = "";
-  dueDateInput.value = "";
-}
+      function addTask() {
+        const text = taskInput.value.trim();
+        const date = dueDateInput.value;
+        if (!text || !date) return alert('Please enter both task and due date');
 
-function toggleDone(index) {
-  const tasks = getTasks();
-  tasks[index].done = !tasks[index].done;
-  saveTasks(tasks);
-  renderTasks(tasks);
-}
+        const tasks = getTasks();
+        const newTask = { text, date, done: false };
+        tasks.push(newTask);
+        saveTasks(tasks);
+        renderTasks(tasks);
+        scheduleReminder(newTask); // ✅ Set reminder
+        taskInput.value = '';
+        dueDateInput.value = '';
+      }
 
-function deleteTask(index) {
-  const taskItems = document.querySelectorAll("#taskList li");
-  const taskElement = taskItems[index];
-  if (taskElement) {
-    taskElement.classList.add("fade-out");
-    taskElement.addEventListener("animationend", () => {
-      const tasks = getTasks();
-      tasks.splice(index, 1);
-      saveTasks(tasks);
-      renderTasks(tasks);
-    });
-  }
-}
 
-function clearCompleted() {
-  const tasks = getTasks().filter(task => !task.done);
-  saveTasks(tasks);
-  renderTasks(tasks);
-}
+      function deleteTask(index) {
+        const tasks = getTasks();
+        tasks.splice(index, 1);
+        saveTasks(tasks);
+        renderTasks(tasks);
+      }
 
-function renderTasks(tasks) {
-  taskList.innerHTML = "";
-  const filter = filterSelect.value;
-  const sortOrder = sortOrderSelect.value;
+      function toggleDone(index) {
+        const tasks = getTasks();
+        tasks[index].done = !tasks[index].done;
+        saveTasks(tasks);
+        renderTasks(tasks);
+      }
 
-  const sorted = tasks.sort((a, b) =>
-    sortOrder === "newest"
-      ? new Date(b.date) - new Date(a.date)
-      : new Date(a.date) - new Date(b.date)
-  );
+      function renderTasks(tasks) {
+        taskList.innerHTML = '';
+        const sorted = [...tasks].sort((a, b) => {
+          return sortOrder === 'asc'
+            ? new Date(a.date) - new Date(b.date)
+            : new Date(b.date) - new Date(a.date);
+        });
 
-  const filtered = sorted.filter(task => {
-    const matchesFilter =
-      filter === "all" ||
-      (filter === "active" && !task.done) ||
-      (filter === "completed" && task.done);
+        sorted.forEach((task, index) => {
+          if (
+            (filter === 'active' && task.done) ||
+            (filter === 'completed' && !task.done)
+          ) return;
 
-    const matchesSearch = task.text.toLowerCase().includes(searchQuery.toLowerCase());
+          const li = document.createElement('li');
+          li.className = 'bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded flex justify-between items-center';
 
-    return matchesFilter && matchesSearch;
-  });
+          li.innerHTML = `
+            <div class="flex flex-col flex-1 cursor-pointer ${task.done ? 'line-through text-gray-500' : ''}" onclick="toggleDone(${index})">
+              <span>${task.text}</span>
+              <small class="text-xs text-gray-500 dark:text-gray-300">Due: ${task.date}</small>
+            </div>
+            <button class="bg-red-500 text-white px-3 py-1 rounded ml-4" onclick="deleteTask(${index})">Delete</button>
+          `;
+          taskList.appendChild(li);
+        });
+      }
 
-  filtered.forEach((task, index) => {
-    const li = document.createElement("li");
-    li.className = "bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded flex justify-between items-center fade-in";
+      function filterTasks(type) {
+        filter = type;
+        renderTasks(getTasks());
+      }
 
-    li.innerHTML = `
-      <div class="flex flex-col flex-1 cursor-pointer ${task.done ? "line-through text-gray-500" : ""}" onclick="toggleDone(${index})">
-        <span>${task.text}</span>
-        <small class="text-xs text-gray-500 dark:text-gray-300">Due: ${task.date}</small>
-      </div>
-      <button class="bg-red-500 text-white px-3 py-1 rounded ml-4" onclick="deleteTask(${index})">Delete</button>
-    `;
-    taskList.appendChild(li);
-  });
-}
+      function sortTasks(order) {
+        sortOrder = order;
+        renderTasks(getTasks());
+      }
 
-function toggleDarkMode() {
-  document.documentElement.classList.toggle("dark");
-}
+      function clearCompleted() {
+        let tasks = getTasks();
+        tasks = tasks.filter(task => !task.done);
+        saveTasks(tasks);
+        renderTasks(tasks);
+      }
 
-document.getElementById("searchInput").addEventListener("input", e => {
-  searchQuery = e.target.value;
-  renderTasks(getTasks());
-});
+      function toggleDarkMode() {
+        document.documentElement.classList.toggle('dark');
+        const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        localStorage.setItem('theme', theme);
+      }
 
-window.onload = () => renderTasks(getTasks());
+      function scheduleReminder(task) {
+        const delay = new Date(task.date).getTime() - Date.now();
+        if (delay > 0 && delay < 24 * 60 * 60 * 1000) { // Only notify for tasks due in next 24h
+          setTimeout(() => {
+            showNotification(`Reminder: ${task.text}`, `Due at ${new Date(task.date).toLocaleTimeString()}`);
+          }, delay);
+        }
+      }
 
-// PWA install button
-let deferredPrompt;
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.classList.remove("hidden");
-  installBtn.addEventListener("click", () => {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(choice => {
-      if (choice.outcome === "accepted") console.log("App installed");
-      installBtn.classList.add("hidden");
-    });
-  });
-});
+      function showNotification(title, body) {
+        if (Notification.permission === 'granted') {
+          new Notification(title, { body });
+        }
+      }
+
+      function requestNotificationPermission() {
+        if ('Notification' in window) {
+          Notification.requestPermission().then(permission => {
+            console.log('Notification permission:', permission);
+          });
+        }
+      }
+
+      requestNotificationPermission();
+
+      
+
+
 
