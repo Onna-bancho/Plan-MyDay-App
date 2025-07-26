@@ -13,3 +13,11 @@
   from { opacity: 1; transform: scale(1); }
   to { opacity: 0; transform: scale(0.95); }
 }
+
+.task-text-input {
+  font-size: 1rem;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  background-color: transparent;
+}

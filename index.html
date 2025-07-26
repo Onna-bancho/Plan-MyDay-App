@@ -38,11 +38,14 @@
             <button onclick="clearCompleted()" class="text-red-500 text-sm hover:underline">Clear Completed</button>
             <button onclick="toggleDarkMode()" class="text-sm text-blue-500 hover:underline">Toggle Dark Mode</button>
             <input 
-                type="text" 
-                id="searchInput" 
-                placeholder="Search tasks..." 
-                class="mt-2 w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+            type="text"
+            value="${task.text}"
+            class="task-text-input bg-transparent border-none focus:outline-none ${task.done ? 'line-through text-gray-500' : ''}"
+            data-index="${index}"
+            onblur="updateTaskText(event, {index})"
+            onkeydown="if(event.key === 'Enter') this.blur();"
             />
+
 
         
 
